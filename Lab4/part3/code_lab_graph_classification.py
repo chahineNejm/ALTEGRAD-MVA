@@ -19,7 +19,12 @@ def load_dataset():
     ##################
     # your code here #
     ##################
+    dataset = TUDataset(root="data/MUTAG", name="MUTAG")
 
+    Gs = []
+    for data in dataset:
+        G = to_networkx(data, to_undirected=True, remove_self_loops=True)
+        Gs.append(G)
     y = [data.y.item() for data in dataset]
     return Gs, y
 
@@ -106,17 +111,48 @@ def graphlet_kernel(Gs_train, Gs_test, n_samples=200):
     graphlets[3].add_edge(0,2)
 
     
-    phi_train = np.zeros((len(G_train), 4))
+    phi_train = np.zeros((len(Gs_train), 4))
     
     ##################
     # your code here #
     ##################
+    
+    for i, G in enumerate(Gs_train):
+        nodes = list(G.nodes())
+        n = len(nodes)
+        if n < 3: 
+            continue
 
-    phi_test = np.zeros((len(G_test), 4))
+        for _ in range(n_samples):
+            sampled_nodes = np.random.choice(nodes, size=3, replace=False)
+            subgraph = G.subgraph(sampled_nodes)
+            
+            for j in range(4):
+                if nx.is_isomorphic(subgraph, graphlets[j]):
+                    phi_train[i, j] += 1
+                    break
+
+    phi_test = np.zeros((len(Gs_test), 4))
     
     ##################
     # your code here #
     ##################
+    for i, G in enumerate(Gs_test):
+        nodes = list(G.nodes())
+        n = len(nodes)
+        if n < 3: 
+            continue
+
+        for _ in range(n_samples):
+        
+            sampled_nodes = np.random.choice(nodes, size=3, replace=False)
+            subgraph = G.subgraph(sampled_nodes)
+            
+            for j in range(4):
+                if nx.is_isomorphic(subgraph, graphlets[j]):
+                    
+                    phi_test[i, j] += 1
+                    break
 
     K_train = np.dot(phi_train, phi_train.T)
     K_test = np.dot(phi_test, phi_train.T)
@@ -134,6 +170,9 @@ K_train_sp, K_test_sp = shortest_path_kernel(G_train, G_test)
 # your code here #
 ##################
 
+print("######################## TASK 9 ##################")
+Kernell_train , Kernell_test = graphlet_kernel(G_train, G_test)
+print(f"we retrive the sampled following kernel {Kernell_train}")
 
 
 ############## Task 10
@@ -141,3 +180,26 @@ K_train_sp, K_test_sp = shortest_path_kernel(G_train, G_test)
 ##################
 # your code here #
 ##################
+
+from sklearn . svm import SVC
+# I n i t i a l i z e SVM and t r a i n
+clf = SVC( kernel= "precomputed" )
+clf.fit (Kernell_train , y_train )
+# P r e d i c y_train
+y_pred_graphlet = clf . predict ( Kernell_test )
+accuracy_graphlet = accuracy_score(y_test, y_pred_graphlet)
+
+kernel_train_shortest,kernel_test_shortest = shortest_path_kernel(G_train,G_test)
+clf = SVC( kernel= "precomputed" )
+clf.fit (kernel_train_shortest , y_train )
+# P r e d i c y_train
+y_pred_shortest = clf . predict ( kernel_test_shortest )
+accuracy_shortest = accuracy_score(y_test, y_pred_shortest)
+
+
+#
+print("--- Classification Accuracy Comparison ---")
+print(f"Shortest Path Kernel Accuracy: {accuracy_shortest:.4f}")
+print(f"Graphlet Kernel Accuracy:      {accuracy_graphlet:.4f}")
+
+

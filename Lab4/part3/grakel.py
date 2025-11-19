@@ -62,8 +62,8 @@ def get_vocab(train_docs, test_docs):
     return vocab
 
 
-path_to_train_set = '../datasets/train_5500_coarse.label'
-path_to_test_set = '../datasets/TREC_10_coarse.label'
+path_to_train_set = r'C:/Users/ADMIN/Desktop/ALTEGRAD/ALTEGRAD-MVA/Lab4/datasets/train_5500_coarse.label'
+path_to_test_set = r'C:/Users/ADMIN/Desktop/ALTEGRAD/ALTEGRAD-MVA/Lab4/datasets/TREC_10_coarse.label'
 
 # Read and pre-process train data
 train_data, y_train = load_file(path_to_train_set)
@@ -92,7 +92,17 @@ def create_graphs_of_words(docs, vocab, window_size):
         # your code here #
         ##################
         
+        G.add_nodes_from(vocab)
+        
+        for i in range(len(doc)):
+            term_i = doc[i]
+            
+            for j in range(i + 1, min(i + 1 + window_size, len(doc))):
+                term_j = doc[j]
+                G.add_edge(term_i, term_j)
+                        
         graphs.append(G)
+        
     
     return graphs
 
@@ -102,29 +112,29 @@ G_train_nx = create_graphs_of_words(train_data, vocab, 3)
 G_test_nx = create_graphs_of_words(test_data, vocab, 3)
 
 print("Example of graph-of-words representation of document")
-nx.draw_networkx(G_train_nx[3], with_labels=True)
-plt.show()
+#nx.draw_networkx(G_train_nx[3], with_labels=True)
+#plt.show()
 
 
 from grakel.utils import graph_from_networkx
 from grakel.kernels import WeisfeilerLehman, VertexHistogram
 from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score
-
+import sys
 
 
 # Task 12
 
 # Transform networkx graphs to grakel representations
-G_train = # your code here #
-G_test = # your code here #
+G_train = graph_from_networkx(G_train_nx)
+G_test = graph_from_networkx(G_test_nx)
 
 # Initialize a Weisfeiler-Lehman subtree kernel
-gk = # your code here #
+gk = WeisfeilerLehman()
 
 # Construct kernel matrices
-K_train = # your code here #
-K_test = # your code here #
+K_train = gk.fit_transform(G_train)
+K_test = gk.fit_transform(G_test)
 
 #Task 13
 
@@ -133,6 +143,11 @@ K_test = # your code here #
 ##################
 # your code here #
 ##################
+
+clf = SVC( kernel= "precomputed" )
+clf.fit (K_train , y_train )
+# P r e d i c y_train
+y_pred = clf . predict ( K_train )
 
 # Evaluate the predictions
 print("Accuracy:", accuracy_score(y_pred, y_test))
@@ -144,3 +159,75 @@ print("Accuracy:", accuracy_score(y_pred, y_test))
 ##################
 # your code here #
 ##################
+from grakel.kernels import RandomWalk
+import pandas as pd
+
+# --- Define Kernels ---
+kernels = [
+    {
+        "name": ">>> WL Subtree (n_iter=1) <<<",
+        "kernel": WeisfeilerLehman(n_iter=1, normalize=False, base_kernel=VertexHistogram)
+    },
+    {
+        "name": ">>> WL Subtree (n_iter=5) <<<",
+        "kernel": WeisfeilerLehman(n_iter=5, normalize=True, base_kernel=VertexHistogram)
+    },
+    {
+        "name": ">>> Random Walk (p=0.01) <<<",
+        "kernel": RandomWalk(kernel_type='geometric', p=0.01, normalize=True)
+    },
+    {
+        "name": ">>> Vertex Histogram (Baseline) <<<",
+        "kernel": VertexHistogram(normalize=True)
+    }
+]
+
+results = []
+
+print("=" * 60)
+print("             STARTING GRAPH KERNEL EXPERIMENT")
+print("=" * 60)
+
+for item in kernels:
+    kernel_name = item["name"]
+    gk = item["kernel"]
+    
+    print(f"\n{kernel_name}")
+    print("-" * len(kernel_name))
+    
+
+    # Construct Kernel Matrices
+    K_train = gk.fit_transform(G_train)
+    K_test = gk.transform(G_test)
+    
+    # Train SVM and Predict
+    svm_classifier = SVC(kernel='precomputed')
+    svm_classifier.fit(K_train, y_train)
+    y_pred = svm_classifier.predict(K_test)
+    
+    # Evaluate Performance
+    accuracy = accuracy_score(y_test, y_pred)
+    
+    results.append({
+        "Kernel Name": kernel_name.strip('> <'),
+        "Accuracy": accuracy,
+        "K_train Shape": K_train.shape
+    })
+        
+    print(f"  ACCURACY: {accuracy:.4f}")
+    print(f"  K_train Shape: {K_train.shape}")
+
+
+
+# --- Performance Matrix ---
+performance_df = pd.DataFrame(results)
+performance_df = performance_df.sort_values(by="Accuracy", ascending=False).reset_index(drop=True)
+performance_df.index.name = "Rank"
+
+print("\n" + "=" * 60)
+print("             FINAL PERFORMANCE MATRIX")
+print("=" * 60)
+
+# Display the performance table using markdown format
+print(performance_df[['Kernel Name', 'Accuracy', 'K_train Shape']].to_markdown(index=True))
+print("=" * 60)
