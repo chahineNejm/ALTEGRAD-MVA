@@ -13,8 +13,17 @@ def normalize_adjacency(A):
     ##################
     # your code here #
     ##################
-    
-	return A_normalized
+    A_tilde = A + sp.eye(A.shape[0])
+
+    degrees = np.array(A_tilde.sum(axis=1)).flatten()
+    d_inv_sqrt = 1.0 / np.sqrt(degrees)
+    d_inv_sqrt[np.isinf(d_inv_sqrt)] = 0.0   # Handle zero-degree nodes
+
+    D_inv_sqrt = sp.diags(d_inv_sqrt)
+
+    A_normalized = D_inv_sqrt @ A_tilde @ D_inv_sqrt
+	
+    return A_normalized
 
 
 def load_cora():

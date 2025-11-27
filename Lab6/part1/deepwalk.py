@@ -6,7 +6,7 @@ import numpy as np
 import networkx as nx
 from random import randint
 from gensim.models import Word2Vec
-
+import random
 
 ############## Task 1
 # Simulates a random walk of length "walk_length" starting from node "node"
@@ -15,21 +15,30 @@ def random_walk(G, node, walk_length):
     ##################
     # your code here #
     ##################
+    walk = [node]
+    for _ in range(walk_length):
+        voisin = list(G.neighbors(walk[-1]))
+        walk.append(random.choice(voisin))
     
-	walk = [str(node) for node in walk]
-	return walk
+    walk = [str(node) for node in walk]
+    
+    return walk
 
 
 ############## Task 2
 # Runs "num_walks" random walks from each node
 def generate_walks(G, num_walks, walk_length):
     walks = []
-    
-    ##################
-    # your code here #
-    ##################
+    for _ in range(num_walks):
+            ##################
+            # your code here #
+            ##################
+        start_node = random.choice(list(G.nodes()))
+        walks.append(random_walk(G, start_node, walk_length))
 
-    return permuted_walks.tolist()
+    random.shuffle(walks)
+
+    return walks
 
 
 # Simulates walks and uses the Skipgram model to learn node representations

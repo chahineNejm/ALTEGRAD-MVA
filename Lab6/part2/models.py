@@ -23,6 +23,18 @@ class GNN(nn.Module):
         ##################
         # your code here #
         ##################
-
-
+        h1 = self.fc1(x_in)                  
+        h1 = torch.mm(adj, h1)                
+        h1 = self.relu(h1)                  
+        h1 = self.dropout(h1)
+        
+        h2 = self.fc2(h1)                  
+        h2 = torch.mm(adj, h2)                
+        h2 = self.relu(h2)                  
+        h2 = self.dropout(h2)
+        
+        h3 = self.fc3(h2)                  
+        h3 = torch.mm(adj, h3)                
+        x = self.dropout(h3)
+        
         return F.log_softmax(x, dim=1)

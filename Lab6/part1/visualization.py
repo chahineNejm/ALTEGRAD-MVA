@@ -10,7 +10,7 @@ from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 
 # Loads the web graph
-G = nx.read_weighted_edgelist('../data/web_sample.edgelist', delimiter=' ', create_using=nx.Graph())
+G = nx.read_weighted_edgelist(r'C:\Users\ADMIN\Desktop\ALTEGRAD\ALTEGRAD-MVA\Lab6\data\web_sample.edgelist', delimiter=' ', create_using=nx.Graph())
 print("Number of nodes:", G.number_of_nodes())
 print("Number of edges:", G.number_of_edges())
 
@@ -24,19 +24,25 @@ walk_length = 20
 ##################
 # your code here #
 ##################
+skipgram_walks = deepwalk(G,num_walks=n_walks,walk_length=walk_length,n_dim=n_dim)
+
 
 ############## Task 4
 # Visualizes the representations of the 100 nodes that appear most frequently in the generated walks
 def visualize(model, n, dim):
+    from collections import Counter
 
-    nodes = # your code here
+    nodes =[node for node,_ in Counter(model.wv.index_to_key).most_common(n)]
+
     DeepWalk_embeddings = np.empty(shape=(n, dim))
     
     ##################
     # your code here #
     ##################
-
-
+    for k,v in enumerate(nodes):
+        
+        DeepWalk_embeddings[k,:] = model.wv[v]
+    
     my_pca = PCA(n_components=10)
     my_tsne = TSNE(n_components=2)
 
@@ -53,4 +59,4 @@ def visualize(model, n, dim):
     plt.show()
 
 
-visualize(model, 100, n_dim)
+visualize(skipgram_walks, 100, n_dim)
