@@ -33,8 +33,7 @@ class GNN(nn.Module):
         h2 = self.relu(h2)                  
         h2 = self.dropout(h2)
         
-        h3 = self.fc3(h2)                  
-        h3 = torch.mm(adj, h3)                
+        h3 = self.fc3(h2)                                 
         x = self.dropout(h3)
         
-        return F.log_softmax(x, dim=1)
+        return F.log_softmax(x, dim=1) , h2

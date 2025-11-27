@@ -103,6 +103,7 @@ embeddings_test = test()
 ############## Task 13
 # Transforms torch tensor to numpy matrix
 
+embeddings_test_np = embeddings_test.detach().cpu().numpy()
 ##################
 # your code here #
 ##################
@@ -110,6 +111,8 @@ embeddings_test = test()
 
 # Projects the emerging representations to two dimensions using t-SNE
 
+tsne = TSNE(n_components=2, learning_rate='auto', init='pca', perplexity=30)
+embeddings_test_2d = tsne.fit_transform(embeddings_test_np)
 ##################
 # your code here #
 ##################
