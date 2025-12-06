@@ -39,6 +39,11 @@ class Decoder(nn.Module):
         ##################
         # your code here #
         ##################
+        for mlp in self.fc:
+            x = mlp(x)
+        x = self.fc_proj(x).view(-1,self.n_nodes,self.n_nodes)
+        x = (x + x.transpose(1,2))/2
+        adj = torch.sigmoid(x)
         
         return adj
 
@@ -72,6 +77,11 @@ class Encoder(nn.Module):
         # your code here #
         ##################
 
+        for mlp in self.mlps:
+            x = torch.mm(adj,x)
+            x = mlp(x)
+        
+        
         # Readout
         idx = idx.unsqueeze(1).repeat(1, x.size(1))
         out = torch.zeros(torch.max(idx)+1, x.size(1), device=x.device, requires_grad=False)
@@ -111,8 +121,8 @@ class VariationalAutoEncoder(nn.Module):
         
         ############## Task 6
     
-        mu = # your code here
-        logvar = # your code here
+        mu = self.fc_mu(x_g)
+        logvar = self.fc_logvar(x_g)
         
         x_g = self.reparameterize(mu, logvar)
         adj = self.decoder(x_g)

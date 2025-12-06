@@ -21,18 +21,25 @@ class GATLayer(nn.Module):
         ##################
         # your code here #
         ##################
-
+        z = self.fc(x)
+        indices = adj.coalesce().indices()
+        concatenated = torch.cat([z[indices[0,:]],z[indices[1,:]]],dim=1)
+        concatenated = self.a(concatenated)
+        h=self.leakyrelu(concatenated)
+        
         h = torch.exp(h.squeeze())
         unique = torch.unique(indices[0,:])
         t = torch.zeros(unique.size(0), device=x.device)
         h_sum = t.scatter_add(0, indices[0,:], h)
         h_norm = torch.gather(h_sum, 0, indices[0,:])
+
         alpha = torch.div(h, h_norm)
         adj_att = torch.sparse.FloatTensor(indices, alpha, torch.Size([x.size(0), x.size(0)])).to(x.device)
         
         ##################
         # your code here #
         ##################
+        out = torch.mm(adj_att,z)
 
         return out, alpha
 
@@ -54,5 +61,11 @@ class GNN(nn.Module):
         ##################
         # your code here #
         ##################
-
-        return F.log_softmax(x, dim=1)
+        Z1 = self.relu(self.mp1(x,adj)[0])
+        Z1 = self.dropout(Z1)
+        Z2,alpha = self.mp2(Z1,adj)
+        Z2 = self.relu(Z2)
+        
+        x = self.fc(Z2)
+        
+        return F.log_softmax(x, dim=1) , alpha
